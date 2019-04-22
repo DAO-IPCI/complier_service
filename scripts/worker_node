@@ -5,6 +5,7 @@
 from collections import namedtuple
 from queue import Queue
 from threading import Thread
+from web3 import Web3, HTTPProvider
 
 # ROS
 import rospy
@@ -16,29 +17,60 @@ from robonomics_liability.msg import Liability
 from robonomics_liability.srv import StartLiability, StartLiabilityRequest
 from robonomics_liability.srv import FinishLiability, FinishLiabilityRequest
 from robonomics_liability.objective import Objective
+from ethereum_common.eth_keyfile_helper import KeyfileHelper
+
+# This package
+from .contracts import COMPLIER, VCU
+
+keyfile = '/var/lib/liability/keyfile'
+keyfile_password_file = '/var/lib/liability/keyfile-psk'
+web3_http_provider = 'https://mainnet.infura.io/v3/ffe399a7a90d4682b544ed23369037d4'
+emission_factor = 0.430 # g CO2 / W*h
+# one VCU == 1 tCO2; 1 W*h => 0.430 gCO2
 
 
-def offset_footprint(cumulative_consumption_kw, geo):
+def offset_footprint(cumulative_consumption_wh, geo):
     """Offset carbon footprint for given amount of energy consumption in region
     """
+    print('going to offset {} from {}'.format(cumulative_consumption_wh, geo))
 
     def get_emission_factor(geo):
-        return NotImplemented
+        return emission_factor
 
-
-    def calc_footprint(cumulative_consumption_kwh, emission_factor):
-        co2_gr = NotImplemented
-        return co2_gr
-
-
-    def burn_credits(volume):
-        return NotImplemented
+    def calc_footprint(cumulative_consumption_wh, emission_factor):
+        return cumulative_consumption_wh * emission_factor
 
     emission_factor = get_emission_factor(geo)
-    footprint_co2_g = calc_footprint(cumulative_consumption_kwh)
-    burn_credits(footprint_co2_g)
+    footprint_g_co2 = calc_footprint(cumulative_consumption_wh, emission_factor)
 
-    return NotImplemented
+    if not (footprint_g_co2 % 1_000_000): # tonn of CO2
+        raise ValueError('Possible to offset only multiplies of ton CO2 (1000000 gram)')
+
+    def burn_credits(volume):
+        print('going to burn {}'.format(volume))
+        #account = KeyfileHelper(rospy.get_param('~keyfile'),
+        account = KeyfileHelper(keyfile,
+                #keyfile_password_file=rospy.get_param('~keyfile_password_file')
+                keyfile_password_file=keyfile_password_file
+                ).get_local_account_from_keyfile()
+        http_provider = HTTPProvider(web3_http_provider)
+        web3 = Web3(http_provider)
+
+        vcu_token = web3.eth.contract(VCU.address, abi=VCU.abi)
+        # vcu_delimiter = (10 ** vcu_token.functions.decimals().call()) # for VCU should be 1
+
+        balance = vcu_token.functions.balanceOf(account).call()
+        print('VCU balance: {}'.format(balance))
+
+        if volume > balance:
+            raise ValueError('Volume exceed balance')
+
+        print('will burn {}'.format(volume))
+        vcu_token.functions.burn(VCU.address, volume).call()
+        print('burned')
+
+    burn_credits(footprint_g_co2 / 1_000_000) # 1VCS means tCO2
+    print('offsetted {} g co2'.format(footprint_g_co2))
 
 
 class WorkerNode:
