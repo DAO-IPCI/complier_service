@@ -20,7 +20,7 @@ from robonomics_liability.objective import Objective
 from ethereum_common.eth_keyfile_helper import KeyfileHelper
 
 # This package
-from .contracts import COMPLIER, VCU
+from contracts import COMPLIER, VCU
 
 keyfile = '/var/lib/liability/keyfile'
 keyfile_password_file = '/var/lib/liability/keyfile-psk'
@@ -65,8 +65,9 @@ def offset_footprint(cumulative_consumption_wh, geo):
         if volume > balance:
             raise ValueError('Volume exceed balance')
 
+        complier = web3.eth.contract(COMPLIER.address, abi=COMPLIER.abi)
         print('will burn {}'.format(volume))
-        vcu_token.functions.burn(VCU.address, volume).call()
+        # complier.functions.burn(VCU.address, volume).call()
         print('burned')
 
     burn_credits(footprint_g_co2 / 1_000_000) # 1VCS means tCO2
@@ -119,9 +120,9 @@ class WorkerNode:
         """
         rospy.loginfo('Starting new job...')
 
-        rospy.loginfo('Offsetting ', objective.messages['cumulative_consumption_kwh'], ' from ',
-                objective.messages['geo'])    
-        offset_footprint(objective.messages['cumulative_consumption_kwh'],
+        rospy.loginfo('Offsetting ', objective.messages['cumulative_consumption_wh'], ' from ',
+                objective.messages['geo'])
+        offset_footprint(objective.messages['cumulative_consumption_wh'],
                 objective.messages['geo'])
 
         self.liability_proxy.finish(liability.address.address, True)
