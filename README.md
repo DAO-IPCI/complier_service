@@ -1,16 +1,10 @@
-Autonomous Agent Template
--------------------------
+Complier Service package
+========================
 
-Simple modular AIRA example effort.
+Model
+-----
+`QmW3dTa1QZxnZzpF9TDuHKN7GDKaJDVoQys4u38xmdAGHF`
 
-
-## Nodes
-
-There are two nodes:
-
-* *trader_node* - to work on offchain negotiations process
-* *worker_node* - trivial liability process executor
-
-## Parameters
-
-Objective `QmVAFgUxBitKqtV2sjaYcHkKfcAPVy3GswhaE5n5bcgLkf`
+Objecitve
+---------
+Consumption in Watt * hour for 1 VCU, represents 1 tCO2, `QmUA5ZHHqFZyR1T1KxxheyrUzEEymfKb3goPZt1jLDNEWL`

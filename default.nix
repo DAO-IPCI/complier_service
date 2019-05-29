@@ -1,6 +1,7 @@
 { stdenv
 , mkRosPackage
-, robonomics_comm 
+, robonomics_comm-nightly
+, python3Packages
 }:
 
 mkRosPackage rec {
@@ -10,10 +11,10 @@ mkRosPackage rec {
 
   src = ./.;
 
-  propagatedBuildInputs = [ robonomics_comm ];
+  propagatedBuildInputs = with python3Packages; [ robonomics_comm-nightly ];
 
   meta = with stdenv.lib; {
-    description = "Simple modular AIRA example effort";
+    description = "Carbon neutrality as a service";
     homepage = http://github.com/airalab/complier_service;
     license = licenses.bsd3;
     maintainers = with maintainers; [ akru ];

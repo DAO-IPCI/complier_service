@@ -3,6 +3,9 @@ project(complier_service)
 
 find_package(catkin REQUIRED COMPONENTS
   rospy
+  robonomics_liability
+  ethereum_common
+  ipfs_common
 )
 
 catkin_python_setup()
@@ -21,6 +24,10 @@ install(
     FILES
         launch/trader.launch
         launch/worker.launch
+        launch/testnet_trader.launch
+        launch/testnet_worker.launch
+        launch/testnet_erc20.launch
+        launch/testnet_liability.launch
     DESTINATION
         ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
 )

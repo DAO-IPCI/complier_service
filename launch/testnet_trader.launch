@@ -1,0 +1,11 @@
+<!-- Rinkeby testnet -->
+<launch>
+  <node name="trader" pkg="complier_service" type="trader_node" output="screen">
+    <param name="lighthouse" value="0xBB21cf7e916B5C5A2805d986DA2A71B522497f47" />
+    <param name="model" value="QW3dTa1QZxnZzpF9TDuHKN7GDKaJDVoQys4u38xmdAGHF" />
+    <param name="objective" value="QmUA5ZHHqFZyR1T1KxxheyrUzEEymfKb3goPZt1jLDNEWL" />
+    <param name="token" value="0x540741e0314D4f6eE475bf8364b00167DBD9EA71" />
+    <param name="price" value="10" />
+    <param name="order_lifetime" value="240" /> <!-- Ethereum blocks lifetime, ~12-15 sec for one -->
+  </node>
+</launch>

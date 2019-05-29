@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Standart, System and Third Party
+from threading import Thread
 
 # ROS
 import rospy
@@ -26,33 +27,22 @@ class TraderNode:
         self.signing_demand = rospy.Publisher('/liability/infochan/eth/signing/demand', Demand, queue_size=128)
         self.signing_offer = rospy.Publisher('/liability/infochan/eth/signing/offer', Offer, queue_size=128)
 
-        rospy.Subscriber('/liability/infochan/incoming/demand', Demand, self.on_incoming_demand)
-        rospy.Subscriber('/liability/infochan/incoming/offer', Offer, self.on_incoming_offer)
+        #rospy.Timer(rospy.Duration(int(rospy.get_param('~order_lifetime'))*15), self.pub_offers)
+        rospy.Timer(rospy.Duration(10), self.pub_offers)
 
         rospy.loginfo('Trader node launched.')
 
-    def act(self, incoming):
-        if type(incoming) is Demand:
-            cost = UIint256(uint256=int(rospy.get_param('~cost')))
-            if incoming.cost > cost:
-                cost = incoming.cost
-            self.make_offer(incoming.objective, cost)
-
-    def on_incoming_demand(self, incoming: Demand):
-        rospy.loginfo('Incoming demand %s...', str(incoming))
-        if (incoming.model.multihash == rospy.get_param('~model') and
-            incoming.token.address == rospy.get_param('~token')):
-            rospy.loginfo('For my model and token!')
-            self.act(incoming) # reactive strategy
-        else:
-            rospy.loginfo('Not fits my model or token, skip it.')
-
-    def get_deadline(self):
-        lifetime = int(rospy.get_param('~order_lifetime'))
-        deadline = rospy.ServiceProxy('/eth/current_block', BlockNumber)().number + lifetime
-        return str(deadline)
+    def pub_offers(self, event):
+        objective = Multihash(multihash=rospy.get_param('~objective'))
+        price = UInt256(uint256=str(rospy.get_param('~price')))
+        self.make_offer(objective, price)
 
     def make_offer(self, objective, cost):
+        def get_deadline():
+            lifetime = int(rospy.get_param('~order_lifetime'))
+            deadline = rospy.ServiceProxy('/eth/current_block', BlockNumber)().number + lifetime
+            return str(deadline)
+
         rospy.loginfo('Making offer...')
 
         offer = Offer()
@@ -69,7 +59,7 @@ class TraderNode:
         offer.lighthouseFee = UInt256()
         offer.lighthouseFee.uint256 = '0'
         offer.deadline = UInt256()
-        offer.deadline.uint256 = self.get_deadline()
+        offer.deadline.uint256 = get_deadline()
 
         self.signing_offer.publish(offer)
         rospy.loginfo(offer)

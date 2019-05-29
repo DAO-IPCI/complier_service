@@ -1,0 +1,13 @@
+The Energy Carbon Footprint service
+===============================
+
+This service offers to offset the carbon footprint for the given energy comsumption
+
+Objective
+---------
+/packet_size (ethereum_common/UInt256 from robonomics_comm metapackage) - the amount of consumed energy that the service offers to offset, Watt*hour
+
+Result
+------
+/packet_size (ethereum_common/UInt256 from robonomics_comm metapackage) - the amount of energy that the service offsets for the carbon footprint, Watt*hour
+/stamp (ethereum_common/UInt256 from robonomics_comm metapackage) - the timestamp of result publication, epoch time in seconds

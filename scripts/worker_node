@@ -16,7 +16,7 @@ from std_srvs.srv import Empty
 from robonomics_liability.msg import Liability
 from robonomics_liability.srv import StartLiability, StartLiabilityRequest
 from robonomics_liability.srv import FinishLiability, FinishLiabilityRequest
-from robonomics_liability.objective import Objective
+from ipfs_common.bag import Bag
 from ethereum_common.eth_keyfile_helper import KeyfileHelper
 
 # This package
@@ -104,7 +104,7 @@ class WorkerNode:
     def subscribe_and_start(self, liability):
         rospy.loginfo('Starting process...')
 
-        objective = Objective(multihash=liability.objective)
+        objective = Bag(multihash=liability.objective)
 
         self.in_process = True
         self.liability_proxy.start(liability.address.address)
