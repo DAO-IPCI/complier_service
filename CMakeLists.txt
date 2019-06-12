@@ -24,6 +24,8 @@ install(
     FILES
         launch/trader.launch
         launch/worker.launch
+        launch/sidechain_trader.launch
+        launch/sidechain_worker.launch
         launch/testnet_trader.launch
         launch/testnet_worker.launch
         launch/testnet_erc20.launch

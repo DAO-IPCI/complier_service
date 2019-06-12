@@ -33,9 +33,12 @@ class TraderNode:
         rospy.loginfo('Trader node launched.')
 
     def pub_offers(self, event):
-        objective = Multihash(multihash=rospy.get_param('~objective'))
-        price = UInt256(uint256=str(rospy.get_param('~price')))
-        self.make_offer(objective, price)
+        try:
+            objective = Multihash(multihash=rospy.get_param('~objective'))
+            price = UInt256(uint256=str(rospy.get_param('~price')))
+            self.make_offer(objective, price)
+        except Exception as e:
+            rospy.logerr('%s: %s' % (type(e), str(e)))
 
     def make_offer(self, objective, cost):
         def get_deadline():

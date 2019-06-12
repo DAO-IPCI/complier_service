@@ -20,11 +20,11 @@ from ipfs_common.bag import Bag
 from ethereum_common.eth_keyfile_helper import KeyfileHelper
 
 # This package
-from contracts import COMPLIER, VCU
+from complier_service.contracts import COMPLIER, VCU
 
 keyfile = '/var/lib/liability/keyfile'
 keyfile_password_file = '/var/lib/liability/keyfile-psk'
-web3_http_provider = 'https://mainnet.infura.io/v3/ffe399a7a90d4682b544ed23369037d4'
+web3_http_provider = 'https://sidechain.aira.life/rpc'
 emission_factor = 0.430 # g CO2 / W*h
 # one VCU == 1 tCO2; 1 W*h => 0.430 gCO2
 
