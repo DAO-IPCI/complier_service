@@ -25,66 +25,15 @@ from complier_service.contracts import COMPLIER, VCU
 keyfile = '/var/lib/liability/keyfile'
 keyfile_password_file = '/var/lib/liability/keyfile-psk'
 web3_http_provider = 'https://sidechain.aira.life/rpc'
-emission_factor = 0.430 # g CO2 / W*h
-# one VCU == 1 tCO2; 1 W*h => 0.430 gCO2
-
-
-def offset_footprint(cumulative_consumption_wh, geo):
-    """Offset carbon footprint for given amount of energy consumption in region
-    """
-    print('going to offset {} from {}'.format(cumulative_consumption_wh, geo))
-
-    def get_emission_factor(geo):
-        return emission_factor
-
-    def calc_footprint(cumulative_consumption_wh, emission_factor):
-        return cumulative_consumption_wh * emission_factor
-
-    emission_factor = get_emission_factor(geo)
-    footprint_g_co2 = calc_footprint(cumulative_consumption_wh, emission_factor)
-
-    if not (footprint_g_co2 % 1_000_000): # tonn of CO2
-        raise ValueError('Possible to offset only multiplies of ton CO2 (1000000 gram)')
-
-    def burn_credits(volume):
-        print('going to burn {}'.format(volume))
-        #account = KeyfileHelper(rospy.get_param('~keyfile'),
-        account = KeyfileHelper(keyfile,
-                #keyfile_password_file=rospy.get_param('~keyfile_password_file')
-                keyfile_password_file=keyfile_password_file
-                ).get_local_account_from_keyfile()
-        http_provider = HTTPProvider(web3_http_provider)
-        web3 = Web3(http_provider)
-
-        vcu_token = web3.eth.contract(VCU.address, abi=VCU.abi)
-        # vcu_delimiter = (10 ** vcu_token.functions.decimals().call()) # for VCU should be 1
-
-        balance = vcu_token.functions.balanceOf(account).call()
-        print('VCU balance: {}'.format(balance))
-
-        if volume > balance:
-            raise ValueError('Volume exceed balance')
-
-        complier = web3.eth.contract(COMPLIER.address, abi=COMPLIER.abi)
-        print('will burn {}'.format(volume))
-        # complier.functions.burn(VCU.address, volume).call()
-        print('burned')
-
-    burn_credits(footprint_g_co2 / 1_000_000) # 1VCS means tCO2
-    print('offsetted {} g co2'.format(footprint_g_co2))
 
 
 class WorkerNode:
-    liability_queue = Queue()
-    in_process = False
 
     def __init__(self):
         rospy.init_node('worker')
         rospy.loginfo('Launching worker node...')
 
         rospy.Subscriber('/liability/ready', Liability, self.on_new_liability)
-        rospy.Subscriber('next_liability', Liability, self.subscribe_and_start)
-        self.next_liability = rospy.Publisher('next_liability', Liability, queue_size=128)
 
         rospy.wait_for_service('liability/finish')
         self.liability_proxy = namedtuple('liability_srvs_proxy', ['start', 'finish'])(
@@ -93,26 +42,20 @@ class WorkerNode:
         rospy.loginfo('Worker node launched.')
 
     def on_new_liability(self, msg):
-        self.liability_queue.put(msg)
         rospy.loginfo("Got new liability %s", msg.address)
-
-    def _process_liability_queue(self):
-        while not rospy.is_shutdown() and not self.in_process:
-            msg = self.liability_queue.get()
-            self.next_liability.publish(msg)
+        self.subscribe_and_start(msg)
 
     def subscribe_and_start(self, liability):
         rospy.loginfo('Starting process...')
 
         objective = Bag(multihash=liability.objective)
 
-        self.in_process = True
+        self.current_liability = liability
         self.liability_proxy.start(liability.address.address)
 
         Thread(target=self.work, args=(objective,), daemon=True).start()
 
     def spin(self):
-        Thread(target=self._process_liability_queue, daemon=True).start()
         rospy.spin()
 
     def work(self, objective):
@@ -120,14 +63,11 @@ class WorkerNode:
         """
         rospy.loginfo('Starting new job...')
 
-        rospy.loginfo('Offsetting ', objective.messages['cumulative_consumption_wh'], ' from ',
-                objective.messages['geo'])
-        offset_footprint(objective.messages['cumulative_consumption_wh'],
-                objective.messages['geo'])
+        rospy.loginfo('Offsetting ', objective.messages['cumulative_consumption_wh'], ' from ', objective.messages['geo'])
+        offset_footprint(objective.messages['cumulative_consumption_wh'], objective.messages['geo'])
 
-        self.liability_proxy.finish(liability.address.address, True)
-        rospy.loginfo('Jobs done.')
-        self.in_process = False
+        self.liability_proxy.finish(self.current_liability.address.address, True)
+        rospy.loginfo('Done!')
 
 
 if __name__ == '__main__':

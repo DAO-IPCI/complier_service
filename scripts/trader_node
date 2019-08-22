@@ -13,6 +13,8 @@ from ethereum_common.msg import Address, UInt256
 from ethereum_common.srv import Accounts, BlockNumber
 from ipfs_common.msg import Multihash
 
+from complier_service.ipfs_utils import ipfs_download
+
 
 class TraderNode:
     def __init__(self):
@@ -24,27 +26,43 @@ class TraderNode:
         self.accounts = rospy.ServiceProxy('/eth/accounts', Accounts)()
         rospy.loginfo(str(self.accounts)) # AIRA ethereum addresses
 
-        self.signing_demand = rospy.Publisher('/liability/infochan/eth/signing/demand', Demand, queue_size=128)
-        self.signing_offer = rospy.Publisher('/liability/infochan/eth/signing/offer', Offer, queue_size=128)
+        rospy.Subscriber('/liability/infochan/incoming/demand', Demand, self.on_incoming_demand)
 
-        #rospy.Timer(rospy.Duration(int(rospy.get_param('~order_lifetime'))*15), self.pub_offers)
-        rospy.Timer(rospy.Duration(10), self.pub_offers)
+        self.signing_offer = rospy.Publisher('/liability/infochan/eth/signing/offer', Offer, queue_size=128)
 
         rospy.loginfo('Trader node launched.')
 
-    def pub_offers(self, event):
-        try:
-            objective = Multihash(multihash=rospy.get_param('~objective'))
-            price = UInt256(uint256=str(rospy.get_param('~price')))
-            self.make_offer(objective, price)
-        except Exception as e:
-            rospy.logerr('%s: %s' % (type(e), str(e)))
+    def on_incoming_demand(self, demand: Demand):
+        rospy.loginfo('Incoming demand %s...', str(demand))
+        if (demand.model.multihash == rospy.get_param('~model') and demand.token.address == rospy.get_param('~token')):
+            rospy.loginfo('For my model and token!')
+            if demand.cost.uint256 == '0':      # Calculate the price and publish offer
+                price = self.calculate_price(demand.objective)
+            else:
+                price = demand.cost
 
-    def make_offer(self, objective, cost):
-        def get_deadline():
-            lifetime = int(rospy.get_param('~order_lifetime'))
-            deadline = rospy.ServiceProxy('/eth/current_block', BlockNumber)().number + lifetime
-            return str(deadline)
+            self.make_offer(demand.objective, price)
+        else:
+            rospy.loginfo('It does not fit my model or token, skip it.')
+
+    def calculate_price(self, objective: Multihash) -> Uint256:
+        # get objective
+        # get the value from `/power_mwh` topic
+        # do the math
+        # return UInt256(price)
+        items = ipfs_download(objective)
+
+        emission_factor = get_emission_factor(items['/geo'])
+        price = calc_footprint(items['/power_mwh'], emission_factor)  ## TODO
+        return UInt256(str(price))
+
+    def get_deadline():
+        lifetime = int(rospy.get_param('~order_lifetime'))
+        deadline = rospy.ServiceProxy('/eth/current_block', BlockNumber)().number + lifetime
+        return str(deadline)
+
+
+    def make_offer(self, objective: Multihash, cost: UInt256):
 
         rospy.loginfo('Making offer...')
 
@@ -62,7 +80,7 @@ class TraderNode:
         offer.lighthouseFee = UInt256()
         offer.lighthouseFee.uint256 = '0'
         offer.deadline = UInt256()
-        offer.deadline.uint256 = get_deadline()
+        offer.deadline.uint256 = self.get_deadline()
 
         self.signing_offer.publish(offer)
         rospy.loginfo(offer)
