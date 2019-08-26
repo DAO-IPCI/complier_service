@@ -14,6 +14,7 @@ from ethereum_common.srv import Accounts, BlockNumber
 from ipfs_common.msg import Multihash
 
 from complier_service.ipfs_utils import ipfs_download
+from complier_service.footprint import get_emission_factor, calc_footprint
 
 
 class TraderNode:
@@ -30,10 +31,10 @@ class TraderNode:
 
         self.signing_offer = rospy.Publisher('/liability/infochan/eth/signing/offer', Offer, queue_size=128)
 
-        rospy.loginfo('Trader node launched.')
+        rospy.loginfo('Trader node is ready!')
 
     def on_incoming_demand(self, demand: Demand):
-        rospy.loginfo('Incoming demand %s...', str(demand))
+        rospy.loginfo('Incoming demand...\n{}'.format(demand))
         if (demand.model.multihash == rospy.get_param('~model') and demand.token.address == rospy.get_param('~token')):
             rospy.loginfo('For my model and token!')
             if demand.cost.uint256 == '0':      # Calculate the price and publish offer
@@ -46,24 +47,18 @@ class TraderNode:
             rospy.loginfo('It does not fit my model or token, skip it.')
 
     def calculate_price(self, objective: Multihash) -> Uint256:
-        # get objective
-        # get the value from `/power_mwh` topic
-        # do the math
-        # return UInt256(price)
         items = ipfs_download(objective)
 
         emission_factor = get_emission_factor(items['/geo'])
         price = calc_footprint(items['/power_mwh'], emission_factor)  ## TODO
         return UInt256(str(price))
 
-    def get_deadline():
+    def get_deadline() -> UInt256:
         lifetime = int(rospy.get_param('~order_lifetime'))
         deadline = rospy.ServiceProxy('/eth/current_block', BlockNumber)().number + lifetime
-        return str(deadline)
-
+        return UInt256(str(deadline))
 
     def make_offer(self, objective: Multihash, cost: UInt256):
-
         rospy.loginfo('Making offer...')
 
         offer = Offer()
@@ -79,8 +74,7 @@ class TraderNode:
         offer.validator.address = '0x0000000000000000000000000000000000000000'
         offer.lighthouseFee = UInt256()
         offer.lighthouseFee.uint256 = '0'
-        offer.deadline = UInt256()
-        offer.deadline.uint256 = self.get_deadline()
+        offer.deadline = self.get_deadline()
 
         self.signing_offer.publish(offer)
         rospy.loginfo(offer)

@@ -10,7 +10,7 @@ Objecitve
 
 Topics:
 
-* `/geo` - coordinates of the place
+* `/geo` - coordinates of the place, format `lat,lng` (example: `53.493898,49.411015`)
 * `/power_mwh` - the amount of the electricity power in MHw
 
 

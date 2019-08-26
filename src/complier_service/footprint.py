@@ -1,5 +1,38 @@
+import rospy
+import sqlite3
+import urllib.request
+import json
+
+USERNAME = ""   # register at https://www.geonames.org/
+
+def ask_geonames(lat: str, lng: str) -> dict:
+    build_url = "http://api.geonames.org/findNearbyPlaceNameJSON?lat={}&lng={}&username={}".format(lat, lng, USERNAME)
+    content = urllib.request.urlopen(build_url).read()
+    return json.loads(content)
+
+def coordinates_to_country(coordinates: str) -> str:
+    splitted = coordinates.split(',')
+    lat, lng = splitted[0], splitted[1]
+    response = ask_geonames(lat, lng)
+
+    country = response["geonames"][0]["countryName"]
+
+    rospy.loginfo("The country is {}".format(country))
+    return country
+
+def find_country_in_db(country: str) -> float:
+    conn = sqlite3.connect(rospy.get_param("~path_to_db"))
+    c = conn.cursor()
+    c.execute("SELECT coefficient FROM factors_by_countries WHERE country='?'", country)
+    return float(c.fetchone())
+
 def get_emission_factor(geo: str) -> float:
-    emission_factor = 0.430 # g CO2 / W*h
+    # geo -> country
+    # get coefficient from db for the country
+    # return
+    country = coordinates_to_country(geo)
+    emission_factor = find_country_in_db(country)   # g CO2 / W*h
+    rospy.loginfo("Emission factor is {}".format(emission_factor))
     # one VCU == 1 tCO2; 1 W*h => 0.430 gCO2
     return emission_factor
 

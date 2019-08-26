@@ -1,8 +1,10 @@
 import os
+import rospy
 from shutil import move
 from tempfile import gettempdir, NamedTemporaryFile
 from ipfsapi import connect
 from rosbag import Bag
+from ipfs_common.msg import Multihash
 
 def ipfs_download_file(ipfs_client, multihash, filepath):
     file_dst = filepath
@@ -30,7 +32,7 @@ def ipfs_download_file(ipfs_client, multihash, filepath):
         rospy.logerr("Failed to download %s to %s with exception: %s", multihash, file_dst, e)
     return True
 
-def ipfs_download(multihash):
+def ipfs_download(multihash: Multihash) -> dict:
     tempdir = gettempdir()
     os.chdir(tempdir)
 
