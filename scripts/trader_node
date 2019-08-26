@@ -46,7 +46,7 @@ class TraderNode:
         else:
             rospy.loginfo('It does not fit my model or token, skip it.')
 
-    def calculate_price(self, objective: Multihash) -> Uint256:
+    def calculate_price(self, objective: Multihash) -> UInt256:
         items = ipfs_download(objective)
 
         emission_factor = get_emission_factor(items['/geo'])
