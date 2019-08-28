@@ -4,6 +4,7 @@ import urllib.request
 import json
 from web3 import Web3, HTTPProvider
 from ethereum_common.eth_keyfile_helper import KeyfileHelper
+from ethereum_common.srv import Accounts, BlockNumber
 from complier_service.contracts import VCU
 
 USERNAME = ""   # register at https://www.geonames.org/
@@ -60,6 +61,18 @@ def get_vcu_price() -> float:
     # TODO grab the price from coincap.io for example
     return VCU_PRICE
 
+def sign_and_send(fn, account="", web3=""):
+    nonce = web3.eth.getTransactionCount(account.address)
+
+    fn_tx = fn.buildTransaction({
+        'from': account.address,
+        'gasPrice': web3.toWei('0', 'gwei'), # Sidechain only
+        'nonce': nonce
+    })
+    signed_tx = web3.eth.account.signTransaction(fn_tx, account.privateKey)
+    tx = web3.eth.sendRawTransaction(signed_tx.rawTransaction)
+    return tx
+
 def offset_footprint(power_kwh: float, geo: str):
     """Offset carbon footprint for given amount of energy consumption in region
     """
@@ -85,7 +98,13 @@ def offset_footprint(power_kwh: float, geo: str):
 
         rospy.loginfo("My account is {}".format(account.address))
 
-        balance = vcu_token.functions.balanceOf(account.address).call()
+        rospy.wait_for_service('/eth/accounts')
+        accounts = rospy.ServiceProxy('/eth/accounts', Accounts)()
+        print(str(accounts.accounts[0].address)) # AIRA ethereum addresses
+
+
+        balance = vcu_token.functions.balanceOf(accounts.accounts[0].address).call()
+        print('VCU balance: {}'.format(balance))
         rospy.loginfo('VCU balance: {}'.format(balance))
 
         if volume > balance:
@@ -93,15 +112,13 @@ def offset_footprint(power_kwh: float, geo: str):
 
         rospy.loginfo('will burn {} {}'.format(volume, type(volume)))
 
-        nonce = web3.eth.getTransactionCount(account.address)
-        burn_tx = vcu_token.functions.burn(volume).buildTransaction({
-            'from': account.address,
-            'gasPrice': web3.toWei('0', 'gwei'), # Sidechain only
-            'nonce': nonce
-        })
-        signed_tx = web3.eth.account.signTransaction(burn_tx, account.privateKey)
-        tx = web3.eth.sendRawTransaction(signed_tx.rawTransaction)
+        burn_call = vcu_token.functions.burn(volume)
+        tx = sign_and_send(burn_call, account=account, web3=web3)
+        print(tx.hex())
 
+
+
+        #burn_tx = burn_call.buildTransaction(
         rospy.loginfo("Tx is {}".format(tx.hex()))
 
         rospy.loginfo('burned')
