@@ -3,11 +3,9 @@
   <name>complier_service</name>
   <version>0.0.1</version>
   <description>Carbon neutrality as a service package</description>
-  <author email="a.khssnv@gmail.com">Alisher A. Khassanov</author>
+  <author email="vadim.razorq@gmail.com">Vadim Manaenko</author>
   <maintainer email="akru@aira.life">Alexander Krupenkin</maintainer>
   <license>BSD3</license>
-  <!-- <url type="website">http://wiki.ros.org/dummy_aira</url> -->
-  <!-- <author email="jane.doe@example.com">Jane Doe</author> -->
 
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>robonomics_msgs</build_depend>
