@@ -44,5 +44,7 @@ def ipfs_download(multihash: Multihash) -> dict:
     messages = {}
     for topic, msg, timestamp in Bag(temp_obj.name, 'r').read_messages():
         messages[topic] = msg
+
+    rospy.loginfo(messages)
     return messages
 

@@ -5,7 +5,6 @@
 from collections import namedtuple
 from queue import Queue
 from threading import Thread
-from web3 import Web3, HTTPProvider
 
 # ROS
 import rospy
@@ -16,16 +15,11 @@ from std_srvs.srv import Empty
 from robonomics_liability.msg import Liability
 from robonomics_liability.srv import StartLiability, StartLiabilityRequest
 from robonomics_liability.srv import FinishLiability, FinishLiabilityRequest
-from ipfs_common.bag import Bag
-from ethereum_common.eth_keyfile_helper import KeyfileHelper
 
 # This package
-from complier_service.contracts import COMPLIER, VCU
-
-keyfile = '/var/lib/liability/keyfile'
-keyfile_password_file = '/var/lib/liability/keyfile-psk'
-web3_http_provider = 'https://sidechain.aira.life/rpc'
-
+from complier_service.contracts import VCU
+from complier_service.ipfs_utils import ipfs_download
+from complier_service.footprint import offset_footprint
 
 class WorkerNode:
 
@@ -35,10 +29,10 @@ class WorkerNode:
 
         rospy.Subscriber('/liability/ready', Liability, self.on_new_liability)
 
-        rospy.wait_for_service('liability/finish')
+        rospy.wait_for_service('/liability/finish')
         self.liability_proxy = namedtuple('liability_srvs_proxy', ['start', 'finish'])(
-                                          rospy.ServiceProxy('liability/start', StartLiability),
-                                          rospy.ServiceProxy('liability/finish', FinishLiability))
+                                          rospy.ServiceProxy('/liability/start', StartLiability),
+                                          rospy.ServiceProxy('/liability/finish', FinishLiability))
         rospy.loginfo('Worker node launched.')
 
     def on_new_liability(self, msg):
@@ -48,12 +42,12 @@ class WorkerNode:
     def subscribe_and_start(self, liability):
         rospy.loginfo('Starting process...')
 
-        objective = Bag(multihash=liability.objective)
+        objective = ipfs_download(liability.objective)
 
         self.current_liability = liability
         self.liability_proxy.start(liability.address.address)
 
-        Thread(target=self.work, args=(objective,), daemon=True).start()
+        Thread(target=self.work, args=(objective, ), daemon=True).start()
 
     def spin(self):
         rospy.spin()
@@ -62,10 +56,12 @@ class WorkerNode:
         """Objective: cumulative_consumption, geo
         """
         rospy.loginfo('Starting new job...')
+        rospy.loginfo("Objective {}".format(objective))
 
-        rospy.loginfo('Offsetting ', objective.messages['cumulative_consumption_wh'], ' from ', objective.messages['geo'])
-        offset_footprint(objective.messages['cumulative_consumption_wh'], objective.messages['geo'])
+        rospy.loginfo('Offsetting {} from {}'.format(objective['/power_kwh'].data, objective['/geo'].data))
+        offset_footprint(objective['/power_kwh'].data, objective['/geo'].data)
 
+        rospy.loginfo("Liability is {}".format(self.current_liability))
         self.liability_proxy.finish(self.current_liability.address.address, True)
         rospy.loginfo('Done!')
 
