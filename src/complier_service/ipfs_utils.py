@@ -1,0 +1,50 @@
+import os
+import rospy
+from shutil import move
+from tempfile import gettempdir, NamedTemporaryFile
+from ipfsapi import connect
+from rosbag import Bag
+from ipfs_common.msg import Multihash
+
+def ipfs_download_file(ipfs_client, multihash, filepath):
+    file_dst = filepath
+    dst_dir, dst_file = os.path.split(file_dst)
+
+    if not os.path.isdir(dst_dir):
+        try:
+            os.mkdir(dst_dir)
+        except Exception as e:
+            rospy.logerr("Directory %s does not exists and cannot be created: %s", e)
+            return False
+
+    if os.path.isdir(file_dst):
+        rospy.logwarn(
+            "Collision between existed directory and IPFS downloading file destination \"%s\". Please fix it manually.",
+            file_dst)
+        return False
+
+    try:
+        tempdir = gettempdir()
+        os.chdir(tempdir)
+        ipfs_client.get(multihash)
+        move(tempdir + os.path.sep + multihash, file_dst)
+    except Exception as e:
+        rospy.logerr("Failed to download %s to %s with exception: %s", multihash, file_dst, e)
+    return True
+
+def ipfs_download(multihash: Multihash) -> dict:
+    tempdir = gettempdir()
+    os.chdir(tempdir)
+
+    temp_obj = NamedTemporaryFile(delete=False)
+
+    res = ipfs_download_file(connect(), multihash.multihash, temp_obj.name)
+    if not res:
+        raise Exception("Can't download objective")
+    messages = {}
+    for topic, msg, timestamp in Bag(temp_obj.name, 'r').read_messages():
+        messages[topic] = msg
+
+    rospy.loginfo(messages)
+    return messages
+

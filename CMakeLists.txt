@@ -22,14 +22,15 @@ catkin_install_python(
 
 install(
     FILES
-        launch/trader.launch
-        launch/worker.launch
-        launch/sidechain_trader.launch
-        launch/sidechain_worker.launch
-        launch/testnet_trader.launch
-        launch/testnet_worker.launch
-        launch/testnet_erc20.launch
-        launch/testnet_liability.launch
+        launch/agent.launch
     DESTINATION
         ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
 )
+
+install(
+    FILES
+       db/countries.db
+    DESTINATION
+        ${CATKIN_PACKAGE_SHARE_DESTINATION}/db
+)
+

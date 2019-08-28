@@ -15,8 +15,8 @@ mkRosPackage rec {
 
   meta = with stdenv.lib; {
     description = "Carbon neutrality as a service";
-    homepage = http://github.com/airalab/complier_service;
+    homepage = http://github.com/dao-ipce/complier_service;
     license = licenses.bsd3;
-    maintainers = with maintainers; [ akru ];
+    maintainers = with maintainers; [ vourhey ];
   };
 }
