@@ -61,7 +61,6 @@ class WorkerNode:
         rospy.loginfo('Offsetting {} from {}'.format(objective['/power_kwh'].data, objective['/geo'].data))
         offset_footprint(objective['/power_kwh'].data, objective['/geo'].data)
 
-        rospy.loginfo("Liability is {}".format(self.current_liability))
         self.liability_proxy.finish(self.current_liability.address.address, True)
         rospy.loginfo('Done!')
 
