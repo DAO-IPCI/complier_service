@@ -7,18 +7,13 @@ from ethereum_common.eth_keyfile_helper import KeyfileHelper
 from ethereum_common.srv import Accounts, BlockNumber
 from complier_service.contracts import VCU
 
-USERNAME = ""   # register at https://www.geonames.org/
+USERNAME = rospy.get_param('/trader/geo_username') # register at https://www.geonames.org/
 VCU_PRICE = 7.5     # $7.5 for 1 VCU token
 
-WEB3_HTTP_PROVIDER = 'https://sidechain.aira.life/rpc'
+WEB3_HTTP_PROVIDER = rospy.get_param('/liability/listener/web3_http_provider')
 
-''' PROD
-KEYFILE = '/var/lib/liability/keyfile'
-KEYFILE_PASSWORD_FILE = '/var/lib/liability/keyfile-psk'
-'''
-
-KEYFILE = '/home/vadim/Projects/robonomics_dev/keyfile'
-KEYFILE_PASSWORD_FILE = '/home/vadim/Projects/robonomics_dev/keyfile_password_file'
+KEYFILE = rospy.get_param('/liability/infochan/eth/signer/keyfile')
+KEYFILE_PASSWORD_FILE = rospy.get_param('/liability/infochan/eth/signer/keyfile_password_file')
 
 def ask_geonames(lat: str, lng: str) -> dict:
     build_url = "http://api.geonames.org/findNearbyPlaceNameJSON?lat={}&lng={}&username={}".format(lat, lng, USERNAME)
@@ -100,11 +95,8 @@ def offset_footprint(power_kwh: float, geo: str):
 
         rospy.wait_for_service('/eth/accounts')
         accounts = rospy.ServiceProxy('/eth/accounts', Accounts)()
-        print(str(accounts.accounts[0].address)) # AIRA ethereum addresses
-
 
         balance = vcu_token.functions.balanceOf(accounts.accounts[0].address).call()
-        print('VCU balance: {}'.format(balance))
         rospy.loginfo('VCU balance: {}'.format(balance))
 
         if volume > balance:
@@ -114,11 +106,6 @@ def offset_footprint(power_kwh: float, geo: str):
 
         burn_call = vcu_token.functions.burn(volume)
         tx = sign_and_send(burn_call, account=account, web3=web3)
-        print(tx.hex())
-
-
-
-        #burn_tx = burn_call.buildTransaction(
         rospy.loginfo("Tx is {}".format(tx.hex()))
 
         rospy.loginfo('burned')
