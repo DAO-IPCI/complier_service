@@ -7,7 +7,7 @@
 mkRosPackage rec {
   name = "${pname}-${version}";
   pname = "complier_service";
-  version = "master";
+  version = "0.1.0";
 
   src = ./.;
 
