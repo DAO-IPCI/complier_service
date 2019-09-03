@@ -45,6 +45,9 @@ class WorkerNode:
         objective = ipfs_download(liability.objective)
 
         self.current_liability = liability
+        prefix = '/liability/eth_' + liability.address.address
+        self.pub_volume = rospy.Publisher(prefix + '/offset', String, queue_size=128)
+        self.pub_token = rospy.Publisher(prefix + '/offset_token', String, queue_size=128)
         self.liability_proxy.start(liability.address.address)
 
         Thread(target=self.work, args=(objective, ), daemon=True).start()
@@ -59,9 +62,17 @@ class WorkerNode:
         rospy.loginfo("Objective {}".format(objective))
 
         rospy.loginfo('Offsetting {} from {}'.format(objective['/power_kwh'].data, objective['/geo'].data))
-        offset_footprint(objective['/power_kwh'].data, objective['/geo'].data)
+        offsetted = offset_footprint(objective['/power_kwh'].data, objective['/geo'].data)
+
+        self.pub_volume.publish(String(str(offsetted)))
+        self.pub_token.publish(String(str(VCU.address)))
+
+        rospy.sleep(2)
 
         self.liability_proxy.finish(self.current_liability.address.address, True)
+
+        self.pub_token.unregister()
+        self.pub_volume.unregister()
         rospy.loginfo('Done!')
 
 

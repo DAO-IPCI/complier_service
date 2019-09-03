@@ -110,6 +110,9 @@ def offset_footprint(power_kwh: float, geo: str):
 
         rospy.loginfo('burned')
 
-    burn_credits(int(footprint_g_co2 / 1_000)) # 1VCS means tCO2
+    volume = int(footprint_g_co2 / 1_000)
+
+    burn_credits(volume) # 1VCS means tCO2
     rospy.loginfo('offsetted {} kg co2'.format(footprint_g_co2))
+    return volume
 
