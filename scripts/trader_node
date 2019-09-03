@@ -8,7 +8,7 @@ from threading import Thread
 import rospy
 
 # Robonomics communication
-from robonomics_msgs.msg import Offer, Demand
+from robonomics_msgs.msg import Offer, Demand, Result
 from ethereum_common.msg import Address, UInt256
 from ethereum_common.srv import Accounts, BlockNumber
 from ipfs_common.msg import Multihash
@@ -33,6 +33,7 @@ class TraderNode:
         rospy.Subscriber('/liability/infochan/incoming/demand', Demand, self.on_incoming_demand)
 
         self.signing_offer = rospy.Publisher('/liability/infochan/eth/signing/offer', Offer, queue_size=128)
+        self.signing_result = rospy.Publisher('/liability/infochan/eth/signing/result', Result, queue_size=128)
 
         rospy.loginfo('Trader node is ready!')
 
@@ -42,26 +43,37 @@ class TraderNode:
             rospy.loginfo('For my model and token!')
             if demand.cost.uint256 == '0':      # Calculate the price and publish offer
                 price = self.calculate_price(demand.objective)
-                self.make_offer(demand.objective, price)
-            else:
-                price = demand.cost
+                if price == 0:  # if price is still 0, then there was an error
+                    self.send_result(demand)
+                else:
+                    self.make_offer(demand.objective, UInt256(str(price)))
         else:
             rospy.loginfo('It does not fit my model or token, skip it.')
 
-    def calculate_price(self, objective: Multihash) -> UInt256:
+    def calculate_price(self, objective: Multihash) -> int:
         rospy.loginfo("The demand is with 0 price; Calculating...")
         items = ipfs_download(objective)
 
         emission_factor = get_emission_factor(items['/geo'].data)
         kilogram_of_co2 = calc_footprint(float(items['/power_kwh'].data), emission_factor)  ## TODO
         ton_of_co2 = int(kilogram_of_co2 / 1000)
+        rospy.loginfo("Ton of CO2 {}".format(ton_of_co2))
         if ton_of_co2 != 0:
             vcu_price = get_vcu_price()
             dai_price = self.DAI_PRICE
-            price = int(round(vcu_price / dai_price, 2) * 100)
+            price = int(round(vcu_price / dai_price, 2) * 100) * ton_of_co2
         else:
             price = int(0)
-        return UInt256(str(price))
+        return price
+
+    def send_result(self, demand: Demand):
+        res = Result()
+        res.liability = demand.sender
+        res.result = demand.objective
+        res.success = False
+
+        rospy.loginfo(res)
+        self.signing_result.publish(res)
 
     def get_deadline(self) -> UInt256:
         lifetime = int(rospy.get_param('~order_lifetime'))
