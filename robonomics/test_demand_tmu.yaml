@@ -1,0 +1,24 @@
+model: {
+  "multihash": "QmXzHDbfJG5ygAQbQZGAEpCcGa3Sc7c6Lvx9FxhVMvCR7M"
+}
+objective: {
+  "multihash": "QmfZb9mcNTQpiPXeXuwVBWBBqafE6LZUaoFQ1eBrzomNNe"
+}
+token: {
+  "address": "0x0773a3e835B4cD8dDD594C4858eE0E0845794444"
+}
+cost: {
+  "uint256": "0"
+}
+lighthouse: {
+  "address": "0x202a09A451DE674d2d65Bf1C90968a8d8F72cf7b"
+}
+validator: {
+  "address": "0x0000000000000000000000000000000000000000"
+}
+validatorFee: {
+  "uint256": "0"
+}
+deadline: {
+  "uint256": "9000000"
+}

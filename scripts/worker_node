@@ -17,7 +17,7 @@ from robonomics_liability.srv import StartLiability, StartLiabilityRequest
 from robonomics_liability.srv import FinishLiability, FinishLiabilityRequest
 
 # This package
-from complier_service.contracts import VCU
+from complier_service.contracts import TOKEN_TO_BURN
 from complier_service.ipfs_utils import ipfs_download
 from complier_service.footprint import offset_footprint
 
@@ -61,11 +61,11 @@ class WorkerNode:
         rospy.loginfo('Starting new job...')
         rospy.loginfo("Objective {}".format(objective))
 
-        rospy.loginfo('Offsetting {} from {}'.format(objective['/power_kwh'].data, objective['/geo'].data))
-        offsetted = offset_footprint(objective['/power_kwh'].data, objective['/geo'].data)
+        rospy.loginfo('Offsetting {} from {}'.format(objective['/co2_volume'].data, "Russia"))
+        offsetted = offset_footprint(int(objective['/co2_volume'].data), "Russia")
 
         self.pub_volume.publish(String(str(offsetted)))
-        self.pub_token.publish(String(str(VCU.address)))
+        self.pub_token.publish(String(str(TOKEN_TO_BURN.address)))
 
         rospy.sleep(2)
 

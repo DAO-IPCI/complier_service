@@ -3,6 +3,7 @@
 
 # Standart, System and Third Party
 from threading import Thread
+import sys
 
 # ROS
 import rospy
@@ -18,14 +19,15 @@ from ipfs_common.msg import Multihash
 class OfferNode:
 
     DAI_PRICE = 1   # $1
-    MODEL = 'QmW3dTa1QZxnZzpF9TDuHKN7GDKaJDVoQys4u38xmdAGHF'
-    TOKEN = '0x7cfd3337F9e423751C9314f9C80cbA57CA2844FE'
     LIGHTHOUSE = '0x202a09A451DE674d2d65Bf1C90968a8d8F72cf7b'
 
-    def __init__(self):
+    def __init__(self, model, token):
 
         rospy.init_node('trader')
         rospy.loginfo('Launching trader node...')
+
+        self.MODEL = model
+        self.TOKEN = token
 
         rospy.wait_for_service('/eth/current_block')
         rospy.wait_for_service('/eth/accounts')
@@ -76,5 +78,10 @@ class OfferNode:
         rospy.spin()
 
 if __name__ == '__main__':
-    OfferNode().spin()
+    '''
+        ./script <model> <token>
+    '''
+    model = sys.argv[1]
+    token = sys.argv[2]
+    OfferNode(model, token).spin()
 

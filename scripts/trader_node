@@ -3,6 +3,7 @@
 
 # Standart, System and Third Party
 from threading import Thread
+import math
 
 # ROS
 import rospy
@@ -14,12 +15,13 @@ from ethereum_common.srv import Accounts, BlockNumber
 from ipfs_common.msg import Multihash
 
 from complier_service.ipfs_utils import ipfs_download
-from complier_service.footprint import get_emission_factor, calc_footprint, get_vcu_price
+from complier_service.footprint import get_token_price
 
 
 class TraderNode:
 
     DAI_PRICE = 1   # $1
+    DAI_DECIMALS = 10**2 # digits after decimal point
 
     def __init__(self):
         rospy.init_node('trader')
@@ -39,7 +41,7 @@ class TraderNode:
 
     def on_incoming_demand(self, demand: Demand):
         rospy.loginfo('Incoming demand...\n{}'.format(demand))
-        if (demand.model.multihash == rospy.get_param('~model') and demand.token.address == rospy.get_param('~token')):
+        if (demand.model.multihash == rospy.get_param('~model') and demand.token.address == rospy.get_param('~payment_token')):
             rospy.loginfo('For my model and token!')
             if demand.cost.uint256 == '0':      # Calculate the price and publish offer
                 price = self.calculate_price(demand.objective)
@@ -54,14 +56,17 @@ class TraderNode:
         rospy.loginfo("The demand is with 0 price; Calculating...")
         items = ipfs_download(objective)
 
-        emission_factor = get_emission_factor(items['/geo'].data)
-        kilogram_of_co2 = calc_footprint(float(items['/power_kwh'].data), emission_factor)  ## TODO
-        ton_of_co2 = int(kilogram_of_co2 / 1000)
-        rospy.loginfo("Ton of CO2 {}".format(ton_of_co2))
-        if ton_of_co2 != 0:
-            vcu_price = get_vcu_price()
-            dai_price = self.DAI_PRICE
-            price = int(round(vcu_price / dai_price, 2) * 100) * ton_of_co2
+        '''
+        objective:
+        * /co2_volume
+        '''
+
+        kilogram_of_co2 = int(items['/co2_volume'].data)
+        rospy.loginfo("Kilograms of CO2 {}".format(kilogram_of_co2))
+        if kilogram_of_co2 != 0:
+            token_price = get_token_price()
+            ton_of_co2 = kilogram_of_co2 / 1000
+            price = math.ceil(ton_of_co2 * token_price / self.DAI_PRICE * self.DAI_DECIMALS)
         else:
             price = int(0)
         return price
@@ -88,7 +93,7 @@ class TraderNode:
         offer.model.multihash = rospy.get_param('~model')
         offer.objective = objective
         offer.token = Address()
-        offer.token.address = rospy.get_param('~token')
+        offer.token.address = rospy.get_param('~payment_token')
         offer.cost = cost
         offer.lighthouse = Address()
         offer.lighthouse.address = rospy.get_param('~lighthouse')
