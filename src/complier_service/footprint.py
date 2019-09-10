@@ -71,10 +71,11 @@ def offset_footprint(kilos: float, geo: str):
         rospy.loginfo("Tx is {}".format(tx.hex()))
 
         rospy.loginfo('burned')
+        return amount
 
     volume = kilos / 1000
 
-    burn_credits(volume) # 1VCS means tCO2
-    rospy.loginfo('offsetted {} kg co2'.format(kilos))
-    return volume
+    amount = burn_credits(volume) # 1VCS means tCO2
+    rospy.loginfo('offsetted {} kg co2 and burnd {} tokens'.format(kilos, amount))
+    return amount
 
