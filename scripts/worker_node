@@ -37,7 +37,8 @@ class WorkerNode:
 
     def on_new_liability(self, msg):
         rospy.loginfo("Got new liability %s", msg.address)
-        self.subscribe_and_start(msg)
+        if msg.model.multihash == rospy.get_param("trader/model"):
+            self.subscribe_and_start(msg)
 
     def subscribe_and_start(self, liability):
         rospy.loginfo('Starting process...')

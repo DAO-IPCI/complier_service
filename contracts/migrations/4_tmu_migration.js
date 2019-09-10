@@ -1,8 +1,13 @@
-const TMU = artifacts.require("TMU");
+const TMUKhimprom = artifacts.require("TMUKhimprom");
+const TMUSwisskrono = artifacts.require("TMUSwisskrono")
 
 module.exports = async (deployer, network, accounts) => {
-    await deployer.deploy(TMU);
+    await deployer.deploy(TMUKhimprom);
+    await deployer.deploy(TMUSwisskrono);
 
-    const tmu = await TMU.deployed();
-    await tmu.mint(accounts[0], 200000000);
+    const tmukhimprom = await TMUKhimprom.deployed();
+    await tmukhimprom.mint(accounts[0], 200000000);
+
+    const tmuswisskrono = await TMUSwisskrono.deployed();
+    await tmuswisskrono.mint(accounts[0], 1400000000);
 };
