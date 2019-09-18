@@ -22,6 +22,7 @@ class TraderNode:
 
     DAI_PRICE = 1   # $1
     DAI_DECIMALS = 10**2 # digits after decimal point
+    PRICE_FOR_TON = 287 * (10**3) # KZT
 
     def __init__(self):
         rospy.init_node('trader')
@@ -66,7 +67,8 @@ class TraderNode:
         if kilogram_of_co2 != 0:
             token_price = get_token_price()
             ton_of_co2 = kilogram_of_co2 / 1000
-            price = math.ceil(ton_of_co2 * token_price / self.DAI_PRICE * self.DAI_DECIMALS)
+            price = math.ceil(ton_of_co2 * self.PRICE_FOR_TON)
+            # price = math.ceil(ton_of_co2 * token_price / self.DAI_PRICE * self.DAI_DECIMALS)
         else:
             price = int(0)
         return price
