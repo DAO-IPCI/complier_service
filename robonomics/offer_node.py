@@ -70,6 +70,7 @@ class OfferNode:
         demand.validatorFee = UInt256()
         demand.validatorFee.uint256 = '0'
         demand.deadline = self.get_deadline()
+        demand.nonce = UInt256('0')
 
         self.signing_demand.publish(demand)
         rospy.loginfo(demand)
