@@ -5,30 +5,14 @@ import json
 from web3 import Web3, HTTPProvider
 from ethereum_common.eth_keyfile_helper import KeyfileHelper
 from ethereum_common.srv import Accounts, BlockNumber
-from complier_service.contracts import VCU
+from offsetting_agent.contracts import VCU
 
-USERNAME = rospy.get_param('/trader/geo_username') # register at https://www.geonames.org/
 VCU_PRICE = 7.5     # $7.5 for 1 VCU token
 
 WEB3_HTTP_PROVIDER = rospy.get_param('/liability/listener/web3_http_provider')
 
 KEYFILE = rospy.get_param('/liability/infochan/eth/signer/keyfile')
 KEYFILE_PASSWORD_FILE = rospy.get_param('/liability/infochan/eth/signer/keyfile_password_file')
-
-def ask_geonames(lat: str, lng: str) -> dict:
-    build_url = "http://api.geonames.org/findNearbyPlaceNameJSON?lat={}&lng={}&username={}".format(lat, lng, USERNAME)
-    content = urllib.request.urlopen(build_url).read()
-    return json.loads(content)
-
-def coordinates_to_country(coordinates: str) -> str:
-    splitted = coordinates.split(',')
-    lat, lng = splitted[0], splitted[1]
-    response = ask_geonames(lat, lng)
-
-    country = response["geonames"][0]["countryName"]
-
-    rospy.loginfo("The country is {}".format(country))
-    return country
 
 def find_country_in_db(country: str) -> float:
     conn = sqlite3.connect(rospy.get_param("/trader/path_to_db"))
@@ -102,17 +86,18 @@ def offset_footprint(power_kwh: float, geo: str):
         if volume > balance:
             raise ValueError('Volume exceed balance')
 
-        rospy.loginfo('will burn {} {}'.format(volume, type(volume)))
+        rospy.loginfo('will burn {}'.format(volume))
 
         burn_call = vcu_token.functions.burn(volume)
         tx = sign_and_send(burn_call, account=account, web3=web3)
         rospy.loginfo("Tx is {}".format(tx.hex()))
 
         rospy.loginfo('burned')
+        return tx.hex()
 
     volume = int(footprint_g_co2 / 1_000)
 
-    burn_credits(volume) # 1VCS means tCO2
+    tx = burn_credits(volume) # 1VCS means tCO2
     rospy.loginfo('offsetted {} kg co2'.format(footprint_g_co2))
-    return volume
+    return (volume, tx)
 

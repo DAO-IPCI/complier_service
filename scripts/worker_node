@@ -15,11 +15,11 @@ from std_srvs.srv import Empty
 from robonomics_liability.msg import Liability
 from robonomics_liability.srv import StartLiability, StartLiabilityRequest
 from robonomics_liability.srv import FinishLiability, FinishLiabilityRequest
+from ipfs_common.ipfs_rosbag import IpfsRosBag
 
 # This package
-from complier_service.contracts import VCU
-from complier_service.ipfs_utils import ipfs_download
-from complier_service.footprint import offset_footprint
+from offsetting_agent.contracts import VCU
+from offsetting_agent.footprint import offset_footprint
 
 class WorkerNode:
 
@@ -42,12 +42,18 @@ class WorkerNode:
     def subscribe_and_start(self, liability):
         rospy.loginfo('Starting process...')
 
-        objective = ipfs_download(liability.objective)
+        bag = IpfsRosBag(multihash=liability.objective)
+        objective = bag.messages
 
         self.current_liability = liability
         prefix = '/liability/eth_' + liability.address.address
-        self.pub_volume = rospy.Publisher(prefix + '/offset', String, queue_size=128)
-        self.pub_token = rospy.Publisher(prefix + '/offset_token', String, queue_size=128)
+        self.pub_volume = rospy.Publisher("/offset", String, queue_size=128)
+        self.pub_token = rospy.Publisher("/offset_token", String, queue_size=128)
+        self.pub_account = rospy.Publisher("/account", String, queue_size=128)
+        self.pub_country = rospy.Publisher("/country", String, queue_size=128)
+        self.pub_factor = rospy.Publisher("/factor", String, queue_size=128)
+        self.pub_consumed = rospy.Publisher("/consumed", String, queue_size=128)
+        self.pub_tx = rospy.Publisher("/tx", String, queue_size=128)
         self.liability_proxy.start(liability.address.address)
 
         Thread(target=self.work, args=(objective, ), daemon=True).start()
@@ -61,11 +67,20 @@ class WorkerNode:
         rospy.loginfo('Starting new job...')
         rospy.loginfo("Objective {}".format(objective))
 
-        rospy.loginfo('Offsetting {} from {}'.format(objective['/power_kwh'].data, objective['/geo'].data))
-        offsetted = offset_footprint(objective['/power_kwh'].data, objective['/geo'].data)
+        country = objective['/geo'][0].data
+        power = objective['/power_kwh'][0].data
+
+        rospy.loginfo('Offsetting {} from {}'.format(power, country))
+        factor = get_emission_factor(country)
+        offsetted, tx = offset_footprint(power, country)
 
         self.pub_volume.publish(String(str(offsetted)))
         self.pub_token.publish(String(str(VCU.address)))
+        self.pub_account.publish(String(self.current_liability.promisee.address))
+        self.pub_country.publish(String(country))
+        self.pub_factor.publish(String(str(factor)))
+        self.pub_consumed.publish(String(str(power)))
+        self.pub_tx.publish(String(str(tx)))
 
         rospy.sleep(2)
 
@@ -73,6 +88,10 @@ class WorkerNode:
 
         self.pub_token.unregister()
         self.pub_volume.unregister()
+        self.pub_account.unregister()
+        self.pub_factor.unregister()
+        self.pub_consumed.unregister()
+        self.pub_tx.unregister()
         rospy.loginfo('Done!')
 
 
