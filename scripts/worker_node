@@ -54,7 +54,7 @@ class WorkerNode:
         self.pub_factor = rospy.Publisher("/factor", String, queue_size=128)
         self.pub_consumed = rospy.Publisher("/consumed", String, queue_size=128)
         self.pub_tx = rospy.Publisher("/tx", String, queue_size=128)
-        self.liability_proxy.start(liability.address.address)
+        self.liability_proxy.start(liability.address)
 
         Thread(target=self.work, args=(objective, ), daemon=True).start()
 
@@ -84,7 +84,7 @@ class WorkerNode:
 
         rospy.sleep(2)
 
-        self.liability_proxy.finish(self.current_liability.address.address, True)
+        self.liability_proxy.finish(self.current_liability.address, True)
 
         self.pub_token.unregister()
         self.pub_volume.unregister()

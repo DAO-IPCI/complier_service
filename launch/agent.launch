@@ -1,12 +1,15 @@
 <launch>
+    <arg name="payment_token" default="0x6B175474E89094C44Da98b954EedeAC495271d0F" />
+    <arg name="token_to_burn" default="" />
+
     <node name="trader" pkg="offsetting_agent" type="trader_node" output="screen">
-        <!-- chainm.lighthouse.5.robonomics.eth -->
-        <param name="lighthouse" value="0x2442ED30381f8556e1e2C12fdb0E7F0aa56192E9" />
         <param name="model" value="QmW3dTa1QZxnZzpF9TDuHKN7GDKaJDVoQys4u38xmdAGHF" />
-        <!-- DAI token -->
-        <param name="token" value="0x6B175474E89094C44Da98b954EedeAC495271d0F" />
+        <param name="token" value="$(arg payment_token)" />
         <param name="order_lifetime" value="100" />
         <param name="path_to_db" value="$(find offsetting_agent)/db/countries.db" />
     </node>
-    <node name="worker" pkg="offsetting_agent" type="worker_node" output="screen" />
+
+    <node name="worker" pkg="offsetting_agent" type="worker_node" output="screen">
+        <param name="token_to_burn" value="$(arg token_to_burn)" />
+    </node>
 </launch>
