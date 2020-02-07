@@ -60,6 +60,7 @@ class TraderNode:
 
         emission_factor = get_emission_factor(items['/geo'][0].data)
         kilogram_of_co2 = calc_footprint(float(items['/power_kwh'][0].data), emission_factor)
+        kilogram_of_co2 = int(kilogram_of_co2)
         # ton_of_co2 = int(kilogram_of_co2 / 1000)
         # rospy.loginfo("Ton of CO2 {}".format(ton_of_co2))
         rospy.loginfo("Kg of CO2 {}".format(kilogram_of_co2))
