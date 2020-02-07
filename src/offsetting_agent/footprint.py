@@ -46,7 +46,8 @@ def sign_and_send(fn, account="", web3=""):
 
     fn_tx = fn.buildTransaction({
         'from': account.address,
-        'gasPrice': web3.toWei('0', 'gwei'), # Sidechain only
+        'gasPrice': web3.eth.gasPrice,
+        # 'gasPrice': web3.toWei('0', 'gwei'), # Sidechain only
         'nonce': nonce
     })
     signed_tx = web3.eth.account.signTransaction(fn_tx, account.privateKey)
