@@ -19,7 +19,7 @@ from ipfs_common.ipfs_rosbag import IpfsRosBag
 
 # This package
 from offsetting_agent.contracts import VCU
-from offsetting_agent.footprint import offset_footprint
+from offsetting_agent.footprint import offset_footprint, get_emission_factor
 
 class WorkerNode:
 
@@ -72,19 +72,23 @@ class WorkerNode:
 
         rospy.loginfo('Offsetting {} from {}'.format(power, country))
         factor = get_emission_factor(country)
-        offsetted, tx = offset_footprint(power, country)
+        try:
+            offsetted, tx = offset_footprint(power, country)
+            self.pub_volume.publish(String(str(offsetted)))
+            self.pub_token.publish(String(str(VCU.address)))
+            self.pub_account.publish(String(self.current_liability.promisee.address))
+            self.pub_country.publish(String(country))
+            self.pub_factor.publish(String(str(factor)))
+            self.pub_consumed.publish(String(str(power)))
+            self.pub_tx.publish(String(str(tx)))
 
-        self.pub_volume.publish(String(str(offsetted)))
-        self.pub_token.publish(String(str(VCU.address)))
-        self.pub_account.publish(String(self.current_liability.promisee.address))
-        self.pub_country.publish(String(country))
-        self.pub_factor.publish(String(str(factor)))
-        self.pub_consumed.publish(String(str(power)))
-        self.pub_tx.publish(String(str(tx)))
+            rospy.sleep(2)
 
-        rospy.sleep(2)
+            self.liability_proxy.finish(self.current_liability.address, True)
 
-        self.liability_proxy.finish(self.current_liability.address, True)
+        except ValueError:
+            self.liability_proxy.finish(self.current_liability.address, False)
+
 
         self.pub_token.unregister()
         self.pub_volume.unregister()
