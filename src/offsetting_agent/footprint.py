@@ -32,6 +32,7 @@ def get_emission_factor(geo: str) -> float:
     # one VCU == 1 tCO2; 1 W*h => 0.430 gCO2
     return emission_factor
 
+# return kg
 def calc_footprint(consumption: float, emission_factor: float) -> float:
     return consumption * emission_factor
 
@@ -62,8 +63,8 @@ def offset_footprint(power_kwh: float, geo: str):
 
     rospy.loginfo("Footprint is {}".format(footprint_g_co2))
 
-    if not (footprint_g_co2 % 1_000) and (int(footprint_g_co2 / 1000) < 1): # tonn of CO2
-        raise ValueError('Possible to offset only multiplies of ton CO2 (1000000 gram)')
+    if int(footprint_g_co2) < 1: # kg of CO2
+        raise ValueError('Possible to offset only multiplies of kg CO2 (1000 gram)')
 
     def burn_credits(volume: int):
         rospy.loginfo('going to burn {}'.format(volume))
@@ -95,7 +96,7 @@ def offset_footprint(power_kwh: float, geo: str):
         rospy.loginfo('burned')
         return tx.hex()
 
-    volume = int(footprint_g_co2 / 1_000)
+    volume = int(footprint_g_co2)
 
     tx = burn_credits(volume) # 1VCS means tCO2
     rospy.loginfo('offsetted {} kg co2'.format(footprint_g_co2))

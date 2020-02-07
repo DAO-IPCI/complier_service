@@ -60,12 +60,13 @@ class TraderNode:
 
         emission_factor = get_emission_factor(items['/geo'][0].data)
         kilogram_of_co2 = calc_footprint(float(items['/power_kwh'][0].data), emission_factor)
-        ton_of_co2 = int(kilogram_of_co2 / 1000)
-        rospy.loginfo("Ton of CO2 {}".format(ton_of_co2))
-        if ton_of_co2 != 0:
+        # ton_of_co2 = int(kilogram_of_co2 / 1000)
+        # rospy.loginfo("Ton of CO2 {}".format(ton_of_co2))
+        rospy.loginfo("Kg of CO2 {}".format(kilogram_of_co2))
+        if kilogram_of_co2 != 0:
             vcu_price = get_vcu_price()
             dai_price = self.DAI_PRICE
-            price = int(round(vcu_price / dai_price, 2) * 10**18) * ton_of_co2
+            price = int(round(vcu_price / dai_price, 2) * 10**15) * kilogram_of_co2
         else:
             price = int(0)
         return price
