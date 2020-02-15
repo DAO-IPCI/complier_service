@@ -6,6 +6,8 @@ from collections import namedtuple
 from queue import Queue
 from threading import Thread
 
+from pinatapy import PinataPy
+
 # ROS
 import rospy
 from std_msgs.msg import String
@@ -33,7 +35,18 @@ class WorkerNode:
         self.liability_proxy = namedtuple('liability_srvs_proxy', ['start', 'finish'])(
                                           rospy.ServiceProxy('/liability/start', StartLiability),
                                           rospy.ServiceProxy('/liability/finish', FinishLiability))
+
+        pinata_api_key = rospy.get_param("~pinata_api_key")
+        pinata_secret_api_key = rospy.get_param("~pinata_secret_api_key")
+
+        if not (pinata_api_key == "" or pinata_secret_api_key == ""):
+            self.pinata = PinataPy(rospy.get_param("~pinata_api_key"), rospy.get_param("~pinata_secret_api_key"))
+            rospy.Subscriber("/liability/infochan/eth/sending/result", Result, self.pin_result)
+
         rospy.loginfo('Worker node launched.')
+
+    def pin_result(self, result: Result):
+        self.pinata.add_hash_to_pin_queue(result.result.multihash)
 
     def on_new_liability(self, msg):
         rospy.loginfo("Got new liability %s", msg.address)

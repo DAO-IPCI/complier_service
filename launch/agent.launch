@@ -2,6 +2,9 @@
     <arg name="payment_token" default="0x6B175474E89094C44Da98b954EedeAC495271d0F" />
     <arg name="token_to_burn" default="" />
 
+    <arg name="pinata_api_key" default="" />
+    <arg name="pinata_secret_api_key" default="" />
+
     <node name="trader" pkg="offsetting_agent" type="trader_node" output="screen">
         <param name="model" value="QmW3dTa1QZxnZzpF9TDuHKN7GDKaJDVoQys4u38xmdAGHF" />
         <param name="token" value="$(arg payment_token)" />
@@ -11,5 +14,8 @@
 
     <node name="worker" pkg="offsetting_agent" type="worker_node" output="screen">
         <param name="token_to_burn" value="$(arg token_to_burn)" />
+
+        <param name="pinata_api_key" value="$(arg pinata_api_key)" />
+        <param name="pinata_secret_api_key" value="$(arg pinata_secret_api_key)" />
     </node>
 </launch>
