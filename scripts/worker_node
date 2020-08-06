@@ -17,6 +17,7 @@ from std_srvs.srv import Empty
 from robonomics_liability.msg import Liability
 from robonomics_liability.srv import StartLiability, StartLiabilityRequest
 from robonomics_liability.srv import FinishLiability, FinishLiabilityRequest
+from robonomics_msgs.msg import Result
 from ipfs_common.ipfs_rosbag import IpfsRosBag
 
 # This package
