@@ -61,13 +61,13 @@ class WorkerNode:
 
         self.current_liability = liability
         prefix = '/liability/eth_' + liability.address.address
-        self.pub_volume = rospy.Publisher("/offset", String, queue_size=128)
-        self.pub_token = rospy.Publisher("/offset_token", String, queue_size=128)
-        self.pub_account = rospy.Publisher("/account", String, queue_size=128)
-        self.pub_country = rospy.Publisher("/country", String, queue_size=128)
-        self.pub_factor = rospy.Publisher("/factor", String, queue_size=128)
-        self.pub_consumed = rospy.Publisher("/consumed", String, queue_size=128)
-        self.pub_tx = rospy.Publisher("/tx", String, queue_size=128)
+        self.pub_volume = rospy.Publisher(prefix + "/offset", String, queue_size=128)
+        self.pub_token = rospy.Publisher(prefix + "/offset_token", String, queue_size=128)
+        self.pub_account = rospy.Publisher(prefix + "/account", String, queue_size=128)
+        self.pub_country = rospy.Publisher(prefix + "/country", String, queue_size=128)
+        self.pub_factor = rospy.Publisher(prefix + "/factor", String, queue_size=128)
+        self.pub_consumed = rospy.Publisher(prefix + "/consumed", String, queue_size=128)
+        self.pub_tx = rospy.Publisher(prefix + "/tx", String, queue_size=128)
         self.liability_proxy.start(liability.address)
 
         Thread(target=self.work, args=(objective, ), daemon=True).start()
